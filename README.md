@@ -1,2 +1,2 @@
-# Pic programmer using Arduino
-A pic programmer made using Arduino and Processing (Java)
+# PIC programmer using Arduino
+A PIC programmer made using Arduino and Processing (Java)
