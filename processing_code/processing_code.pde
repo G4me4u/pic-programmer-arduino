@@ -8,10 +8,8 @@ import java.util.LinkedList;
 import java.util.Arrays;
 
 /** File path location */
-//private static final String FILE_PATH = "C:/Users/Christian/Documents/Github/pic-programmer-arduino/test/pic12f1822/blink.hex";
-//private static final String FILE_PATH = "C:/Users/Christian/MPLABXProjects/Klokgenerator.X/dist/default/production/Klokgenerator.X.production.hex";
-private static final String FILE_PATH = "C:/Users/Christian/MPLABXProjects/blink.X/dist/default/production/blink.X.production.hex";
-//private static final String FILE_PATH = "C:/Users/Christian/Desktop/MyProject.hex";
+//private static final String FILE_PATH = "C:/Users/Christian/Documents/Github/pic-programmer-arduino/test/pic16f1705/blink.hex";
+private static final String FILE_PATH = "E:/Programming/Git-repos/pic-programmer-arduino/test/pic16f1705/blink.hex";
 
 /** Hex file codes */
 private static final int EXTENDED_ADDRESS_TYPE = 0x04;
@@ -57,6 +55,7 @@ void setup() {
   try {
     reader = new FileReader(new File(FILE_PATH));
     hex = new HexFile(reader);
+    println("Read and parsed hex file successfully (" + hex.numDataBytes + " bytes).");
   } catch (IOException e) {
     e.printStackTrace();
   } finally {
@@ -70,12 +69,11 @@ void setup() {
      }
   }
   
-  // Wait for serial device to boot
+  // TODO: add ping-pong protocol at boot-up.
+  println("Waiting for programming device to boot...");
   delay(2000);
   
   if (hex != null) {
-    println("Read and parsed hex file successfully (" + hex.numDataBytes + " bytes).");
-     
     Programmer programmer = new Programmer(serialPort);
     
     try {
