@@ -8,8 +8,8 @@ import java.util.LinkedList;
 import java.util.Arrays;
 
 //private static final String FILE_PATH = "C:/Users/Christian/Documents/Github/pic-programmer-arduino/test/pic12f1822/blink.hex";
-private static final String FILE_PATH = "C:/Users/Christian/MPLABXProjects/Klokgenerator.X/dist/default/production/Klokgenerator.X.production.hex";
-//private static final String FILE_PATH = "C:/Users/Christian/MPLABXProjects/blink.X/dist/default/production/blink.X.production.hex";
+//private static final String FILE_PATH = "C:/Users/Christian/MPLABXProjects/Klokgenerator.X/dist/default/production/Klokgenerator.X.production.hex";
+private static final String FILE_PATH = "C:/Users/Christian/MPLABXProjects/blink.X/dist/default/production/blink.X.production.hex";
 //private static final String FILE_PATH = "C:/Users/Christian/Desktop/MyProject.hex";
 private static final int EXTENDED_ADDRESS_TYPE = 0x04;
 private static final int DATA_TYPE = 0x00;
@@ -19,8 +19,7 @@ private static final int SERIAL_BAUDRATE = 9600;
 void setup() {
   printArray(Serial.list());
   
-  Serial serialPort; //= new Serial(this, Serial.list()[0], SERIAL_BAUDRATE);
-  serialPort = null;
+  Serial serialPort = new Serial(this, Serial.list()[1], SERIAL_BAUDRATE);
   
   Reader reader = null;
   HexFile hex = null;
@@ -240,9 +239,13 @@ private class Programmer {
   }
   
   public void doDataCommand(byte command, int data) {
+    doDataCommand(command, (byte)data, (byte)(data >> 8));
+  }
+  
+  public void doDataCommand(byte command, byte data0, byte data1) {
     serialPort.write(command);
-    serialPort.write((data >> 0) & 0xFF);
-    serialPort.write((data >> 8) & 0xFF);
+    serialPort.write(data0);
+    serialPort.write(data1);
     printFeedback();
   }
   
@@ -279,7 +282,7 @@ private static class HexFile {
     }
   }
   
-  private HexFileEntry readEntry(Reader reader) throws IOException {
+  private static HexFileEntry readEntry(Reader reader) throws IOException {
     int numBytes = readByte(reader);
     int address = (readByte(reader) << 8) | readByte(reader);
     int recordType = readByte(reader);
@@ -294,12 +297,9 @@ private static class HexFile {
     int check = numBytes + address + recordType;
     i = numBytes;
     while (i-- > 0)
-      check += (int)data[i] & 0xFF;
-    check = ((~check) + 1) & 0xFF;
-    
-    println(Integer.toHexString(check));
-    println(Integer.toHexString(checksum));
-    println(entries.size());
+      check += data[i] & 0xFF;
+    check = (~check) & 0xFF;
+    check = (check + 1) & 0xFF;
     
     if (check != checksum)
       throw new IOException("Invalid hex file");
@@ -330,6 +330,7 @@ private static class HexFile {
       return (int)(c - 'a') + 10;
     if (c >= 'A' && c <= 'F')
       return (int)(c - 'A') + 10;
+    println("Invalid hex");
     return -1;
   }
 }
