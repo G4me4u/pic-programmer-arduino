@@ -37,8 +37,13 @@
 #define ER_DAT_CMD 0x0B
 #define ER_ROW_CMD 0x11
 
-// Supported devices
-#define PIC12F1822 0x0138
+// Un-programmed default value
+#define DEF_PROG_M 0x3fff
+
+// Return string when data read failed
+#define FAIL_R_MSG "FFFF\n"
+
+boolean programming = false;
 
 void setup() {
   pinMode(MCLR,    OUTPUT);
@@ -53,50 +58,71 @@ void setup() {
 }
 
 void loop() {  
-  // Commands:
-  //  
-  // Address related commands:
-  // b - begin programming
-  // s - stop programming
-  
-  // i - increment address
-  // z - reset addres to zero
-
-  // e - erase program memory
-
-  // l - load program memory
-  // r - read program memory
-  // w - write program memory
-
+  /* Commands:
+   *  
+   * Programming related commands:
+   *   b - begin programming
+   *   s - stop programming
+   *
+   * Address related commands:
+   *   i - increment address
+   *   z - reset address to zero
+   *   c - load configuration
+   *
+   * Erase related commands:
+   *   e - bulk erase program memory
+   *   t - bulk erase data memory
+   *
+   * Write related commands:
+   *   p - load program memory
+   *   d - load data memory
+   *   w - start internal programming
+   *
+   * Read related commands:
+   *   r - read program memory
+   *
+   * Commands that return data (2 bytes):
+   *   b - device id bits
+   *   r - program memory at address
+   * 
+   * Data commands are most significant
+   * byte first. Commands that return data
+   * have the most significant nipple first 
+   * in the HEX format.
+   */
   if (Serial.available() > 0) {
     if (doCommand(Serial.read())) {
-      Serial.println("d");
+      Serial.print("d\n");
     } else {
-      Serial.println("f");
+      Serial.print("f\n");
     }
   }
 }
 
 bool doCommand(char command) {
-  int dev_id;
+  if (command == 'b') {
+    if (programming)
+      return false;
+    
+    enterProgrammingMode();
+    int dev_id = readDeviceId();
+    if (dev_id == -1) {
+      Serial.print(FAIL_R_MSG);
+      return false;  
+    }
+    
+    Serial.print(String(dev_id, HEX) + "\n");
+    programming = true;
+    return true;
+  }
+  
+  if (!programming)
+    return false;
   
   switch(command) {
-  case 'b':
-    enterProgrammingMode();
-    dev_id = readDeviceId();
-    if (dev_id == -1)
-      Serial.println("Unable to connect to device!");
-  
-    switch (dev_id) {
-    case PIC12F1822:
-      Serial.println("Connected to device: PIC12F1822");
-      return true;
-    default:
-      Serial.println("Unexpected device id: " + String(dev_id, HEX));
-      return false;
-    }
   case 's':
     leaveProgrammingMode();
+    programming = false;
     return true;
   
   case 'e':
@@ -105,12 +131,14 @@ bool doCommand(char command) {
   case 't':
     commandBulkEraseDataMemory();
     return true;
-    
   case 'i':
     commandIncrementAddress();
     return true;
   case 'z':
     commandResetAddress();
+    return true;
+  case 'c':
+    commandLoadConfiguration(readArgument(2));
     return true;
 
   case 'w':
@@ -122,13 +150,9 @@ bool doCommand(char command) {
   case 'd':
     commandLoadDataMemory(readArgument(2));
     return true;
-
-  case 'c':
-    commandLoadConfiguration(readArgument(2));
-    return true;
     
   case 'r':
-    Serial.println(String(commandReadProgramMemory(), HEX));
+    Serial.print(String(commandReadProgramMemory(), HEX) + "\n");
     return true;
   }
 
@@ -137,9 +161,10 @@ bool doCommand(char command) {
 
 unsigned int readArgument(unsigned int num) {
   unsigned int r = 0;
-  while (num > 0) {
+  while (num--) {
     while (Serial.available() == 0);
-    r |= Serial.read() << (--num << 3);
+    r <<= 8;
+    r |= Serial.read() & 0xFF;
   }
   return r;
 }
@@ -159,7 +184,7 @@ int readDeviceId()
   commandIncrementAddress(); // 06
 
   int dev_id = commandReadProgramMemory();
-  if (dev_id == -1) // Unable to read device
+  if (dev_id == DEF_PROG_M) // Unable to read device
     return -1;
 
   // Discard revision bits (0:4)
@@ -301,8 +326,6 @@ void enterProgrammingMode()
   delayMicroseconds(1);
   digitalWrite(ICSPCLK,  LOW);
   delay(1);
-
-  Serial.println("Beginning programming...");
 }
 
 void leaveProgrammingMode() 
@@ -313,8 +336,6 @@ void leaveProgrammingMode()
   
   delay(1);
   digitalWrite(MCLR,   HIGH);
-
-  Serial.println("Stopping programming...");
 }
 
 inline void readMode() 
