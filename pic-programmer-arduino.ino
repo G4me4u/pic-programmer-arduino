@@ -43,6 +43,8 @@
 // Return string when data read failed
 #define FAIL_R_MSG "FFFF\n"
 
+#define TRANSFER_BAUDRATE 57600
+
 boolean programming = false;
 
 void setup() {
@@ -54,7 +56,7 @@ void setup() {
   digitalWrite(PVCC,    LOW);
   digitalWrite(ICSPCLK, LOW);
 
-  Serial.begin(9600);
+  Serial.begin(TRANSFER_BAUDRATE);
 }
 
 void loop() {  

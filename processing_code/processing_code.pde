@@ -8,8 +8,8 @@ import java.util.LinkedList;
 import java.util.Arrays;
 
 /** File path location */
-//private static final String FILE_PATH = "C:/Users/Christian/Documents/Github/pic-programmer-arduino/test/pic16f1705/blink.hex";
-private static final String FILE_PATH = "E:/Programming/Git-repos/pic-programmer-arduino/test/pic16f1705/blink.hex";
+private static final String FILE_PATH = "C:/Users/Christian/Documents/Github/pic-programmer-arduino/test/pic12f1822/blink.hex";
+//private static final String FILE_PATH = "E:/Programming/Git-repos/pic-programmer-arduino/test/pic16f1705/blink.hex";
 
 /** Hex file codes */
 private static final int EXTENDED_ADDRESS_TYPE = 0x04;
@@ -17,7 +17,7 @@ private static final int DATA_TYPE = 0x00;
 private static final int END_OF_FILE_TYPE = 0x01;
 
 /** Serial communication baudrate */
-private static final int SERIAL_BAUDRATE = 9600;
+private static final int SERIAL_BAUDRATE = 57600;
 
 /** The address offset for the extended address */
 private static final int EXTENDED_ADDRESS_OFFSET = 0x8000;
@@ -47,7 +47,7 @@ private static final String COMMAND_FAIL_DATA = "FFFF";
 void setup() {
   printArray(Serial.list());
   
-  Serial serialPort = new Serial(this, Serial.list()[1], SERIAL_BAUDRATE);
+  Serial serialPort = new Serial(this, Serial.list()[0], SERIAL_BAUDRATE);
   
   Reader reader = null;
   HexFile hex = null;
