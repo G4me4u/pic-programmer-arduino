@@ -17,10 +17,15 @@ private static final int DATA_TYPE = 0x00;
 private static final int END_OF_FILE_TYPE = 0x01;
 
 /** Serial communication baudrate */
-private static final int SERIAL_BAUDRATE = 57600;
+private static final int SERIAL_BAUDRATE = 115200;
 
 /** The address offset for the extended address */
 private static final int EXTENDED_ADDRESS_OFFSET = 0x8000;
+/** The default program memory bits */
+private static final int DEF_PROG_M = 0x3FFF;
+
+/** Command success response sent by the arduino */
+private static final byte COMMAND_SUCCESS_DATA = (byte)'d';
 
 /** Supported devices' information */
 private static final int PIC12F1822_DEV_ID = 0x0138;
@@ -41,10 +46,11 @@ private static final int[] CONFIGURATION_ADDRESSES = {
   0x8000
 };
 
-private static final String COMMAND_SUCCESS = "d";
-private static final String COMMAND_FAIL_DATA = "FFFF";
+private static final char POWER_GOOD_SIG = 'g';
 
 void setup() {
+  noLoop();
+  
   printArray(Serial.list());
   
   Serial serialPort = new Serial(this, Serial.list()[0], SERIAL_BAUDRATE);
@@ -69,9 +75,27 @@ void setup() {
      }
   }
   
-  // TODO: add ping-pong protocol at boot-up.
   println("Waiting for programming device to boot...");
-  delay(2000);
+  
+  while(true) {
+    while (serialPort.available() == 0)
+      delay(1);
+    
+    int data = serialPort.read();
+    // Programmer will send power good signal
+    if ((char)data != POWER_GOOD_SIG) {
+      // Sometimes it seems like the serial
+      // i sending 0xF0 as a leading byte to
+      // all communication - ignore it here
+      if (data == 0xF0)
+        continue;
+      
+      serialPort.stop();
+      println("Unable to connect to programmer...");
+      exit();
+      return;
+    } else break;
+  }
   
   if (hex != null) {
     Programmer programmer = new Programmer(serialPort);
@@ -96,6 +120,7 @@ void setup() {
     }
   }
   
+  serialPort.clear();
   serialPort.stop();
   
   exit();
@@ -216,7 +241,8 @@ private class Programmer {
   }
   
   public void start() {
-    int dev_id = doReadCommand((byte)'b');
+    doCommand((byte)'b');
+    int dev_id = readDeviceId();
     if (dev_id == -1)
       throw new ProgrammingException("Unable to connect to device");
 
@@ -233,6 +259,31 @@ private class Programmer {
     println("Connected to device: " + SUPPORTED_DEVICE_NAMES[connectedDevice]);
     configAddress = CONFIGURATION_ADDRESSES[connectedDevice];
   }
+  
+  public int readDeviceId() {
+    // Go to config address (data is
+    // not being programmed).
+    loadConfigAddress();
+  
+    // Actual address is wrong at this
+    // point, if it's the first time
+    // reading the device id bits...
+  
+    // Go to address 6h of config
+    incrementAddress(); // 01
+    incrementAddress(); // 02
+    incrementAddress(); // 03
+    incrementAddress(); // 04
+    incrementAddress(); // 05
+    incrementAddress(); // 06
+  
+    int dev_id = readProgramWord();
+    if (dev_id == DEF_PROG_M) // Unable to read device
+      return -1;
+  
+    // Discard revision bits (0:4)
+    return dev_id >> 5;
+}
   
   public void stop() {
     doCommand((byte)'s');
@@ -301,6 +352,7 @@ private class Programmer {
   
   public void doCommand(byte command) {
     serialPort.write(command);
+    checkCommand(command);
     checkFeedback(command);
   }
   
@@ -312,50 +364,40 @@ private class Programmer {
     serialPort.write(command);
     serialPort.write(data0);
     serialPort.write(data1);
+    checkCommand(command);
     checkFeedback(command);
   }
   
   public int doReadCommand(byte command) {
     serialPort.write(command);
-    String data = getFeedback();
+    checkCommand(command);
+    
+    // Wait for our two bytes of data
+    while(serialPort.available() < 2)
+      delay(1);
+    int b0 = serialPort.read();
+    int b1 = serialPort.read();
     
     checkFeedback(command);
-    if (COMMAND_FAIL_DATA.equals(data))
-      return -1;
     
-    int len = data.length();
-    if (len == 0 || len > 4)
-      return -1;
-    
-    int res = 0;
-    for (int i = 0; i < len; i++) {
-      res <<= 4;
-      res |= MemoryUtil.parseHexChar(data.charAt(i));
-    }
-    
-    return res;
+    return (b0 << 8) | b1;
   }
   
   public void checkFeedback(byte command) {
-    String fb = getFeedback();
-    if (!COMMAND_SUCCESS.equals(fb))
-      throw new ProgrammingException("Failed " + (char)command + " command, received code: " + fb);
+    while(serialPort.available() == 0)
+      delay(1);
+    int code = serialPort.read();
+    if ((byte)code != COMMAND_SUCCESS_DATA)
+      throw new ProgrammingException("Failed " + (char)command + " command, received code: " + (char)code);
   }
   
-  public String getFeedback() {
-    String r = "";
+  private void checkCommand(byte command) {
     while (true) {
       while(serialPort.available() == 0)
         delay(1);
-      
-      int byteIn = serialPort.read();
-      char c = (char)byteIn;
-      if (c == '\n') // new line
+      if ((byte)serialPort.read() == command)
         break;
-      if (c != 13) // Carriage return
-        r += c;
     }
-    return r;
   }
 }
 

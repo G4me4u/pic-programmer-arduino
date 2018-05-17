@@ -37,13 +37,7 @@
 #define ER_DAT_CMD 0x0B
 #define ER_ROW_CMD 0x11
 
-// Un-programmed default value
-#define DEF_PROG_M 0x3fff
-
-// Return string when data read failed
-#define FAIL_R_MSG "FFFF\n"
-
-#define TRANSFER_BAUDRATE 57600
+#define TRANSFER_BAUDRATE 115200
 
 boolean programming = false;
 
@@ -57,6 +51,9 @@ void setup() {
   digitalWrite(ICSPCLK, LOW);
 
   Serial.begin(TRANSFER_BAUDRATE);
+
+  // Send power good signal
+  Serial.print('g');
 }
 
 void loop() {  
@@ -84,20 +81,23 @@ void loop() {
    *   r - read program memory
    *
    * Commands that return data (2 bytes):
-   *   b - device id bits
    *   r - program memory at address
    * 
    * Data commands are most significant
-   * byte first. Commands that return data
-   * have the most significant nipple first 
-   * in the HEX format.
+   * byte first.
    */
   if (Serial.available() > 0) {
-    if (doCommand(Serial.read())) {
-      Serial.print("d\n");
-    } else {
-      Serial.print("f\n");
-    }
+    char command = Serial.read();
+    
+    // Sometimes it seems like the serial
+    // is sending 0xF0 as a leading byte to
+    // all communication - ignore it here
+    // Print back received command
+    if (command == (char)0xF0)
+      return;
+    
+    Serial.print(command);
+    Serial.print(doCommand(command) ? 'd' : 'f');
   }
 }
 
@@ -107,16 +107,11 @@ bool doCommand(char command) {
       return false;
     
     enterProgrammingMode();
-    int dev_id = readDeviceId();
-    if (dev_id == -1) {
-      Serial.print(FAIL_R_MSG);
-      return false;  
-    }
-    
-    Serial.print(String(dev_id, HEX) + "\n");
     programming = true;
     return true;
   }
+
+  int tmp;
   
   if (!programming)
     return false;
@@ -154,7 +149,9 @@ bool doCommand(char command) {
     return true;
     
   case 'r':
-    Serial.print(String(commandReadProgramMemory(), HEX) + "\n");
+    tmp = commandReadProgramMemory();
+    Serial.print((char)(tmp >> 8));
+    Serial.print((char)(tmp >> 0));
     return true;
   }
 
@@ -169,28 +166,6 @@ unsigned int readArgument(unsigned int num) {
     r |= Serial.read() & 0xFF;
   }
   return r;
-}
-
-int readDeviceId() 
-{
-  // Go to address 8000h (data is
-  // not being programmed).
-  commandLoadConfiguration(-1);
-
-  // Go to address 8006h
-  commandIncrementAddress(); // 01
-  commandIncrementAddress(); // 02
-  commandIncrementAddress(); // 03
-  commandIncrementAddress(); // 04
-  commandIncrementAddress(); // 05
-  commandIncrementAddress(); // 06
-
-  int dev_id = commandReadProgramMemory();
-  if (dev_id == DEF_PROG_M) // Unable to read device
-    return -1;
-
-  // Discard revision bits (0:4)
-  return dev_id >> 5;
 }
 
 void commandEntry(unsigned int id) {
