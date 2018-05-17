@@ -92,11 +92,12 @@ void loop() {
     // Sometimes it seems like the serial
     // is sending 0xF0 as a leading byte to
     // all communication - ignore it here
-    // Print back received command
     if (command == (char)0xF0)
       return;
     
+    // Print back received command
     Serial.print(command);
+    // Print command status, when done
     Serial.print(doCommand(command) ? 'd' : 'f');
   }
 }
