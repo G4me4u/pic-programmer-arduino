@@ -117,7 +117,9 @@ private class HexReadProcessor extends HexProcessor {
   }
   
   protected void programData(int address, byte[] data, int numBytes) {
-    programmer.loadAddress(address);
+    // Program data address is divided by two
+    // as it has 2 bytes from hex-file per word.
+    programmer.loadAddress(address / 2);
     
     for (int i = 0; i < numBytes; i += 2) {
       int programmedWord = programmer.readProgramWord();
@@ -151,8 +153,12 @@ private class HexWriteProcessor extends HexProcessor {
   }
   
   protected void programData(int address, byte[] data, int numBytes) {
-    programmer.loadAddress(address);
-    programmer.writeProgramData(data, numBytes);
+    // Program data address is divided by two
+    // as it has 2 bytes from hex-file per word.
+    programmer.loadAddress(address / 2);
+  
+    for (int i = 0; i < numBytes; i += 2)
+      programmer.writeProgramWord(MemoryUtil.bytesToUnsignedShort(data, i, false));
   }
   
   protected void endProcessing() {
@@ -225,8 +231,7 @@ private class Programmer {
       throw new ProgrammingException("Unknown device: " + Integer.toHexString(dev_id));
     
     println("Connected to device: " + SUPPORTED_DEVICE_NAMES[connectedDevice]);
-    // Program addresses are divided by two
-    configAddress = CONFIGURATION_ADDRESSES[connectedDevice] >>> 1;
+    configAddress = CONFIGURATION_ADDRESSES[connectedDevice];
   }
   
   public void stop() {
@@ -240,11 +245,6 @@ private class Programmer {
     return doReadCommand((byte)'r');
   }
   
-  public void writeProgramData(byte[] data, int numBytes) {
-    for (int i = 0; i < numBytes; i += 2)
-      writeProgramWord(MemoryUtil.bytesToUnsignedShort(data, i, false));
-  }
-  
   public void setExtendedAddress(int extAddr) {
     if (extAddr < 0)
       throw new ProgrammingException("Invalid extended address: " + extAddr);
@@ -254,14 +254,13 @@ private class Programmer {
   }
   
   public void loadAddress(int addr) {
-    // Program addresses are divided by two
-    addr = (addr + EXTENDED_ADDRESS_OFFSET * extendedAddress) >>> 1;
+    addr += EXTENDED_ADDRESS_OFFSET * extendedAddress;
     
     // If it's possible to load config address, do so.
     if (addr >= configAddress &&  address < configAddress) {
       loadConfigAddress();
     } else if (addr < address) {
-      // We have to reset address
+      // We have to reset the address
       resetAddress();
     }
     
