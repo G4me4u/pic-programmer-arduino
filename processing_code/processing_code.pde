@@ -8,8 +8,8 @@ import java.util.LinkedList;
 import java.util.Arrays;
 
 /** File path location */
-private static final String FILE_PATH = "C:/Users/Christian/Documents/Github/pic-programmer-arduino/test/pic12f1822/blink.hex";
-//private static final String FILE_PATH = "E:/Programming/Git-repos/pic-programmer-arduino/test/pic16f1705/blink.hex";
+//private static final String FILE_PATH = "C:/Users/Christian/Documents/Github/pic-programmer-arduino/test/pic12f1822/blink.hex";
+private static final String FILE_PATH = "C:/Users/Christian/MPLABXProjects/Neopixel.X/dist/default/production/Neopixel.X.production.hex";
 
 /** Hex file codes */
 private static final int EXTENDED_ADDRESS_TYPE = 0x04;
@@ -42,8 +42,8 @@ private static final String[] SUPPORTED_DEVICE_NAMES = {
 };
 
 private static final int[] CONFIGURATION_ADDRESSES = {
-  0x8000,
-  0x8000
+  0x8000, // PIC12F1822
+  0x8000  // PIC16F1705
 };
 
 private static final char POWER_GOOD_SIG = 'g';
@@ -53,7 +53,7 @@ void setup() {
   
   printArray(Serial.list());
   
-  Serial serialPort = new Serial(this, Serial.list()[0], SERIAL_BAUDRATE);
+  Serial serialPort = new Serial(this, Serial.list()[1], SERIAL_BAUDRATE);
   
   Reader reader = null;
   HexFile hex = null;
@@ -61,7 +61,7 @@ void setup() {
   try {
     reader = new FileReader(new File(FILE_PATH));
     hex = new HexFile(reader);
-    println("Read and parsed hex file successfully (" + hex.numDataBytes + " bytes).");
+    println("Read and parsed hex file successfully (" + hex.parsedLines + " lines, " + hex.numDataBytes + " bytes).");
   } catch (IOException e) {
     e.printStackTrace();
   } finally {
@@ -75,29 +75,29 @@ void setup() {
      }
   }
   
-  println("Waiting for programming device to boot...");
-  
-  while(true) {
-    while (serialPort.available() == 0)
-      delay(1);
-    
-    int data = serialPort.read();
-    // Programmer will send power good signal
-    if ((char)data != POWER_GOOD_SIG) {
-      // Sometimes it seems like the serial
-      // i sending 0xF0 as a leading byte to
-      // all communication - ignore it here
-      if (data == 0xF0)
-        continue;
-      
-      serialPort.stop();
-      println("Unable to connect to programmer...");
-      exit();
-      return;
-    } else break;
-  }
-  
   if (hex != null) {
+    println("Waiting for programming-device to boot...");
+
+    while(true) {
+      while (serialPort.available() == 0)
+        delay(1);
+      
+      int data = serialPort.read();
+      // Programmer will send power good signal
+      if ((char)data != POWER_GOOD_SIG) {
+        // Sometimes it seems like the serial
+        // is sending 0xF0 as a leading byte to
+        // all communication - ignore it here
+        if (data == 0xF0)
+          continue;
+        
+        serialPort.stop();
+        println("Unable to connect to programmer...");
+        exit();
+        return;
+      } else break;
+    }
+    
     Programmer programmer = new Programmer(serialPort);
     
     try {
@@ -405,6 +405,7 @@ private static class HexFile {
   
   public final List<HexFileEntry> entries;
   public int numDataBytes;
+  public int parsedLines;
   
   public HexFile(Reader reader) throws IOException {
     entries = new LinkedList<HexFileEntry>();
@@ -412,16 +413,29 @@ private static class HexFile {
   }
   
   public void readHexFile(Reader reader) throws IOException {
+    if (!entries.isEmpty())
+      entries.clear();
+    // We start at line 1
+    parsedLines = 1;
+    
     int input;
     while ((input = reader.read()) != -1) {
-      if ((char)input == ':')
+      switch((char)input) {
+      case ':':
         entries.add(readEntry(reader));
+        break;
+      case '\n':
+        parsedLines++;
+        break;
+      }
     }
   }
   
   private HexFileEntry readEntry(Reader reader) throws IOException {
     int numBytes = readByte(reader);
-    int address = (readByte(reader) << 8) | readByte(reader);
+    int addr0 = readByte(reader);
+    int addr1 = readByte(reader);
+    int address = (addr0 << 8) | addr1;
     int recordType = readByte(reader);
   
     if (recordType == DATA_TYPE)
@@ -432,14 +446,18 @@ private static class HexFile {
     while (i != numBytes)
       data[i++] = (byte)readByte(reader);
   
-    int checksum = readByte(reader);
+    byte checksum = (byte)readByte(reader);
   
-    int check = numBytes + address + recordType;
+    byte check = 0;
+    check += (byte)numBytes;
+    check += (byte)addr0;
+    check += (byte)addr1;
+    check += (byte)recordType;
     i = numBytes;
     while (i-- > 0)
-      check += data[i] & 0xFF;
-    check = (~check) & 0xFF;
-    check = (check + 1) & 0xFF;
+      check += data[i];  
+    check = (byte)(~check);
+    check++;
     
     if (check != checksum)
       throw new IOException("Invalid hex file");
