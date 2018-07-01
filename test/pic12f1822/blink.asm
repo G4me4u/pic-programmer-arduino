@@ -1,10 +1,11 @@
 ;*******************************************************************************
 ; 
+;                                PIC12F1822
 ;                                ----------
 ;                            Vdd |1      8| Vss 
-;                            RA5 |2      7| RA0 
-;                            RA4 |3      6| RA1 
-;                            RA3 |4      5| RA2 
+;                            RA5 |2      7| RA0/ICSPDAT
+;                            RA4 |3      6| RA1/ICSPCLK
+;                       MCLR/RA3 |4      5| RA2 
 ;                                ---------- 
 ; 
 ;*******************************************************************************
@@ -12,7 +13,7 @@
 ; PIC12F1822 Configuration Bit Settings
 
 ; Assembly source line config statements
-list    p = PIC12F1822
+LIST    P=PIC12F1822
 #include "p12f1822.inc"
 
 ; CONFIG1
@@ -34,9 +35,9 @@ RES_VECT  CODE    0x0000            ; processor reset vector
 ;*******************************************************************************
 
 ISR       CODE    0x0004            ; interrupt vector location
-    ; Set RA2 high
+    ; Flip PORTA bits
     BANKSEL LATA
-    movlw   b'00000100'
+    movlw   b'11111111'
     xorwf   LATA, F
     
     ; Clear interrupt flag
@@ -52,23 +53,42 @@ ISR       CODE    0x0004            ; interrupt vector location
 MAIN_PROG CODE                      ; let linker place main program
 
 SETUP
-    ; Set RA2 as output
+    ; Set clock-source to internal 500 KHz
+    BANKSEL OSCCON
+    ; We want to select the following:
+    ;     SCS  bits <1:0> as '00'   (use INTOSC from config)
+    ;     IRCF bits <6:3> as '0111' (use 500 KHz internal clock)
+    ;     SPLL bit  <7>   as '0'    (software 4xPLL disabled)
+    movlw   b'00111000'
+    movwf   OSCCON
+ 
+    ; Set PORTA as output
     BANKSEL TRISA
-    bcf     TRISA, RA2
+    clrf    TRISA
+    BANKSEL PORTA
+    clrf    PORTA
     
     BANKSEL OPTION_REG
+    ; Select system-clock for
+    ; use with Timer0
     bcf     OPTION_REG, TMR0CS
+    ; Use prescaler for Timer0
     bcf     OPTION_REG, PSA
+    ; Set prescaler to x256
     bsf     OPTION_REG, PS2
     bsf     OPTION_REG, PS1
     bsf     OPTION_REG, PS0
 
+    ; Start Timer0 by clearing it
     BANKSEL TMR0
     clrf    TMR0
     
     BANKSEL INTCON
+    ; Clear Timer0 interrupt flag
     bcf     INTCON, TMR0IF
+    ; Enable Timer0 interrupt
     bsf     INTCON, TMR0IE
+    ; Enable global interrupt
     bsf     INTCON, GIE
     
 START

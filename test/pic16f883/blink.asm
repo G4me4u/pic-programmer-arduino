@@ -1,31 +1,38 @@
 ;*******************************************************************************
 ; 
-;                                PIC16F1705
-;                                ----------
-;                            Vdd |1     14| Vss 
-;                            RA5 |2     13| RA0/ICSPDAT
-;                            RA4 |3     12| RA1/ICSPCLK
-;                       MCLR/RA3 |4     11| RA2 
-;                            RC5 |5     10| RC0 
-;                            RC4 |6      9| RC1 
-;                            RC3 |7      8| RC2 
+;                                 PIC16F883 
+;                                ---------- 
+;                       MCLR/RE3 |1     28| RB7/ICSPDAT 
+;                            RA0 |2     27| RB6/ICSPCLK 
+;                            RA1 |3     26| RB5 
+;                            RA2 |4     25| RB4 
+;                            RA3 |5     24| RB3/PGM 
+;                            RA4 |6     23| RB2 
+;                            RA5 |7     22| RB1 
+;                            Vss |8     21| RB0 
+;                            RA7 |9     20| Vdd 
+;                            RA6 |10    19| Vss 
+;                            RC0 |11    18| RC7 
+;                            RC1 |12    17| RC6 
+;                            RC2 |13    16| RC5 
+;                            RC3 |14    15| RC4 
 ;                                ---------- 
 ; 
 ;*******************************************************************************
 
-; PIC16F1705 Configuration Bit Settings
+; PIC16F883 Configuration Bit Settings
 
 ; Assembly source line config statements
-LIST   P=PIC16F1705
-#include "p16f1705.inc"
+LIST   P=PIC16F883
+#include "p16f883.inc"
 
 ; CONFIG1
-; __config 0xFFE4
- __CONFIG _CONFIG1, _FOSC_INTOSC & _WDTE_OFF & _PWRTE_OFF & _MCLRE_ON & _CP_OFF & _BOREN_ON & _CLKOUTEN_OFF & _IESO_ON & _FCMEN_ON
+; __config 0xFFF4
+ __CONFIG _CONFIG1, _FOSC_INTRC_NOCLKOUT & _WDTE_OFF & _PWRTE_OFF & _MCLRE_ON & _CP_OFF & _CPD_OFF & _BOREN_ON & _IESO_ON & _FCMEN_ON & _LVP_ON
 ; CONFIG2
 ; __config 0xFFFF
- __CONFIG _CONFIG2, _WRT_OFF & _PPS1WAY_ON & _ZCDDIS_ON & _PLLEN_ON & _STVREN_ON & _BORV_LO & _LPBOR_OFF & _LVP_ON
-    
+ __CONFIG _CONFIG2, _BOR4V_BOR40V & _WRT_OFF
+
 ;*******************************************************************************
 ; Reset Vector
 ;*******************************************************************************
@@ -38,15 +45,25 @@ RES_VECT  CODE    0x0000            ; processor reset vector
 ;*******************************************************************************
 
 ISR       CODE    0x0004            ; interrupt vector location
+    ; Load WREG with 256
+    ; for use with xor
+    movlw   0xFF
+       
     ; Flip PORTA bits
-    BANKSEL LATA
-    movlw   b'11111111'
-    xorwf   LATA, F
+    BANKSEL PORTA
+    xorwf   PORTA, F
     
+    ; Flip PORTB bits
+    BANKSEL PORTB
+    xorwf   PORTB, F
+       
     ; Flip PORTC bits
-    BANKSEL LATC
-    movlw   b'11111111'
-    xorwf   LATC, F
+    BANKSEL PORTC
+    xorwf   PORTC, F
+    
+    ; Flip PORTE bits
+    BANKSEL PORTE
+    xorwf   PORTE, F
     
     ; Clear interrupt flag
     BANKSEL INTCON
@@ -64,9 +81,11 @@ SETUP
     ; Set clock-source to internal 500 KHz
     BANKSEL OSCCON
     ; We want to select the following:
-    ;     SCS  bits <1:0> as '00'   (use INTOSC from config)
-    ;     IRCF bits <6:3> as '0111' (use 500 KHz internal clock)
-    ;     SPLL bit  <7>   as '0'    (software 4xPLL disabled)
+    ;     SCS  bit  <0>   as '0'   (use INTOSC from config)
+    ;     LTS  bit  <1>   as '0'   (use LFINTOSC is not stable)
+    ;     HTS  bit  <2>   as '0'   (use HFINTOSC is not stable)
+    ;     OSTS bit  <3>   as '1'   (device running from the internal oscillator)
+    ;     IRCF bits <6:4> as '011' (use 500 KHz internal clock)
     movlw   b'00111000'
     movwf   OSCCON
  
@@ -76,16 +95,28 @@ SETUP
     BANKSEL PORTA
     clrf    PORTA
     
+    ; Set PORTB as output
+    BANKSEL TRISB
+    clrf    TRISB
+    BANKSEL PORTB
+    clrf    PORTB
+    
     ; Set PORTC as output
     BANKSEL TRISC
     clrf    TRISC
     BANKSEL PORTC
     clrf    PORTC
     
+    ; Set PORTE as output
+    BANKSEL TRISE
+    clrf    TRISE
+    BANKSEL PORTE
+    clrf    PORTE
+    
     BANKSEL OPTION_REG
     ; Select system-clock for
     ; use with Timer0
-    bcf     OPTION_REG, TMR0CS
+    bcf     OPTION_REG, T0CS
     ; Use prescaler for Timer0
     bcf     OPTION_REG, PSA
     ; Set prescaler to x256
