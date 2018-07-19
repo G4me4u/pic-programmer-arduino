@@ -1,0 +1,7 @@
+# One could store datasheets in a folder
+# named 'datasheets/' or as a pdf named
+# '[device]-datasheet.pdf'. We dont want
+# these datasheets on GitHub.
+
+*datasheet.pdf
+datasheets/*
