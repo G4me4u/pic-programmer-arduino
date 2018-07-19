@@ -21,21 +21,24 @@ bool PIC12F1822_PicProgrammer::enterProgrammingMode()
 	// Should be connected to approx.
 	// one kilo-ohm pull-down resistor.
 	digitalWrite(MCLR, HIGH);
+	
 	// In the case of low-voltage
 	// MCLR is activated on the 
 	// falling-edge.
 	if (lowVoltageMode)
 		digitalWrite(MCLR, LOW);
 	
+	// Wait for high voltage to charge
 	delayMicroseconds(1);
+
 	digitalWrite(PVCC, HIGH);
 	delay(1);
 
+	// If we're in low voltage programming
+	// mode we have to send sequence key.
 	if (lowVoltageMode) {
-		// If we're in low voltage programming
-		// mode we have to send sequence key.
 		PicSerial::writeMode();
-
+		
 		// Send 32-bit key-sequence + 1 extra
 		// clock pulse to enter programming mode.
 		PicSerial::writeBits(KEY_SEQ, 32 + 1);

@@ -3,7 +3,6 @@
 
 // Different programming specifications
 #include "./PIC12F1822_pic_programmer.h"
-#include "./PIC16F182X_pic_programmer.h"
 #include "./PIC18F1XK22_pic_programmer.h"
 #include "./PIC16F88X_pic_programmer.h"
 
@@ -73,7 +72,7 @@ bool doCommand(char command) {
     // per address specification, the
     // flag should be changed. Default
     // is two bytes per address.
-    unsigned int flags = TWO_BYTES_PER_ADDRESS;
+    bool twoBytesPerAddr = true;
 
     // The low 6 bits of the mode
     // is dedicated to programming
@@ -82,14 +81,11 @@ bool doCommand(char command) {
     case PIC12F1822_SPECIFICATION:
       programmer = new PIC12F1822_PicProgrammer(mode);
       break;
-    case PIC16F182X_SPECIFICATION:
-      programmer = new PIC16F182X_PicProgrammer(mode);
-      break;
     case PIC18F1XK22_SPECIFICATION:
       programmer = new PIC18F1XK22_PicProgrammer(mode);
 
       // Use single byte per address
-      flags     -= TWO_BYTES_PER_ADDRESS;
+      twoBytesPerAddr = false;
       break;
     case PIC16F88X_SPECIFICATION:
       programmer = new PIC16F88X_PicProgrammer(mode);
@@ -100,6 +96,8 @@ bool doCommand(char command) {
 
     // Clear write-buffer
     writeBufferSize = 0;
+
+    unsigned int flags = twoBytesPerAddr ? TWO_BYTES_PER_ADDRESS : 0;
 
     // Send flags to transmitter
     Serial.write((char)(flags >> 8));

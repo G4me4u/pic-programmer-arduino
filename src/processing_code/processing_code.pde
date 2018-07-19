@@ -4,12 +4,12 @@ import java.io.Reader;
 import java.io.FileReader;
 
 /** File path location */
-//private final String FILE_PATH = "C:/Users/Christian/MPLABXProjects/blink-pic18f13k22.X/dist/default/production/blink-pic18f13k22.X.production.hex";
+private final String FILE_PATH = "C:/Users/Christian/MPLABXProjects/blink-pic18f13k22.X/dist/default/production/blink-pic18f13k22.X.production.hex";
 //private final String FILE_PATH = "C:/Users/Christian/MPLABXProjects/blink-pic16f883.X/dist/default/production/blink-pic16f883.X.production.hex";
 //private final String FILE_PATH = "C:/Users/Christian/MPLABXProjects/blink-pic16f1705.X/dist/default/production/blink-pic16f1705.X.production.hex";
-private final String FILE_PATH = "C:/Users/Christian/MPLABXProjects/blink.X/dist/default/production/blink.X.production.hex";
+//private final String FILE_PATH = "C:/Users/Christian/MPLABXProjects/blink.X/dist/default/production/blink.X.production.hex";
 /** Target device to program */
-private final int TARGET_DEVICE_ID = PIC12F1822_DEV_ID;
+private final int TARGET_DEVICE_ID = PIC18F13K22_DEV_ID;
 /** Programming mode specification */
 private final boolean FORCE_LOW_VOLTAGE_PROGRAMMING = true;
 
@@ -39,14 +39,16 @@ private static final String[] SUPPORTED_DEVICE_NAMES = {
 private static final int LOW_VOLTAGE_PROGRAMMING_MASK = 0x80;
 
 private static final int PIC12F1822_SPECIFICATION  = 0x00;
-private static final int PIC18F1XK22_SPECIFICATION = 0x02;
-private static final int PIC16F88X_SPECIFICATION   = 0x03;
+private static final int PIC18F1XK22_SPECIFICATION = 0x01;
+private static final int PIC16F88X_SPECIFICATION   = 0x02;
 
 // The programming modes that will be 
 // used for programming. The 6 low bits 
 // are used to determine the programming 
 // specification to use when programming 
 // the PIC. The 2 MSb are configuration.
+// The programming mode is specified by a
+// single byte (8-bits).
 private static final int[] PROGRAMMING_MODES = {
   PIC12F1822_SPECIFICATION,  // PIC12F1822
   PIC12F1822_SPECIFICATION,  // PIC16F1705
@@ -183,11 +185,14 @@ private class ProgrammerImpl extends Programmer {
     }
     
     if (connectedDevice == -1)
-      throw new ProgrammingException("Unknown device: " + Integer.toHexString(dev_id));
+      throw new ProgrammingException("Unknown connected device: " + Integer.toHexString(dev_id));
     
     println("Connected to device: " + SUPPORTED_DEVICE_NAMES[connectedDevice]);
-    if (connectedDevice != targetDeviceIndex)
-      throw new ProgrammingException("Connected device does not match target device: " + SUPPORTED_DEVICE_NAMES[targetDeviceIndex]);
+    if (connectedDevice != targetDeviceIndex) {
+      String connectedName = SUPPORTED_DEVICE_NAMES[connectedDevice];
+      String targetName = SUPPORTED_DEVICE_NAMES[targetDeviceIndex];
+      throw new ProgrammingException("Connected device, " + connectedName + ", does not match target device: " + targetName);
+    }
   }
   
   public void stop() {
