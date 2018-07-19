@@ -6,10 +6,12 @@ PIC18F1XK22_PicProgrammer::PIC18F1XK22_PicProgrammer(unsigned int flags)
 
 bool PIC18F1XK22_PicProgrammer::enterProgrammingMode()
 {
-	// If we're already programming,
-	// return false.
-	if (this->programming)
-		return false;
+	// Handled externally
+	//
+	// // If we're already programming,
+	// // return false.
+	// if (this->programming)
+	//     return false;
 
 	// Set PGM high, if in low voltage mode
 	if (lowVoltageMode) {
@@ -19,18 +21,19 @@ bool PIC18F1XK22_PicProgrammer::enterProgrammingMode()
 
 	// Set MCLR as output.
 	pinMode(MCLR, OUTPUT);
-	if (lowVoltageMode) {
-		// MCLR is activated on the 
-		// rising-edge.
+	
+	// When in low voltage mode
+	// MCLR is activated on the 
+	// rising-edge.
+	if (lowVoltageMode)
 		digitalWrite(MCLR, LOW);
-		digitalWrite(MCLR, HIGH);
-	} else {
-		// Turn on the high voltage
-		// on MCLR pin (see schematic).
-		// Should be connected to approx.
-		// one kilo-ohm pull-down resistor.
-		digitalWrite(MCLR, HIGH);
-	}
+	
+	// Turn on the high voltage
+	// on MCLR pin (see schematic).
+	// Should be connected to approx.
+	// one kilo-ohm pull-down resistor.
+	digitalWrite(MCLR, HIGH);
+
 	delayMicroseconds(1);
 
 	digitalWrite(PVCC, HIGH);
@@ -131,17 +134,19 @@ void PIC18F1XK22_PicProgrammer::programWriteBuffer(unsigned char *const writeBuf
 		// we should sleep P9 or 1ms. If we're 
 		// in config-space we should sleep P9A
 		// or 5ms.
-		if (this->address < this->getConfigAddress()) {
-			delay(1);
-		} else {
+		if (configSpace) {
 			delay(5);
+		} else {
+			delay(1);
 		}
 		digitalWrite(ICSPCLK, LOW);
 		delayMicroseconds(100);
 
 		// Finish NOP command with 16-bit 
 		// operand. Refer to: Figure 4-5.
-		PicSerial::writeMode();
+
+		// We're already in writeMode.
+		//PicSerial::writeMode();
 		PicSerial::writeBits(0x0000, 16);
 
 		// Increment address
@@ -264,7 +269,10 @@ void PIC18F1XK22_PicProgrammer::eraseDevice()
 
 	// Write the 16-bit operand to finish
 	// the NOP core instruction.
-	PicSerial::writeMode();
+
+	// We're already in writeMode
+	//PicSerial::writeMode();
+	
 	PicSerial::writeBits(0x0000, 16);
 }
 

@@ -8,10 +8,12 @@ PIC12F1822_PicProgrammer::PIC12F1822_PicProgrammer(unsigned int flags)
 
 bool PIC12F1822_PicProgrammer::enterProgrammingMode()
 {
-	// If we're already programming,
-	// return false.
-	if (this->programming)
-		return false;
+	// Handled externally
+	//
+	// // If we're already programming,
+	// // return false.
+	// if (this->programming)
+	//     return false;
 
 	// Set MCLR as output.
 	pinMode(MCLR, OUTPUT);
@@ -38,7 +40,7 @@ bool PIC12F1822_PicProgrammer::enterProgrammingMode()
 	// mode we have to send sequence key.
 	if (lowVoltageMode) {
 		PicSerial::writeMode();
-		
+
 		// Send 32-bit key-sequence + 1 extra
 		// clock pulse to enter programming mode.
 		PicSerial::writeBits(KEY_SEQ, 32 + 1);
