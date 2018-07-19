@@ -15,20 +15,19 @@ bool PIC12F1822_PicProgrammer::enterProgrammingMode()
 
 	// Set MCLR as output.
 	pinMode(MCLR, OUTPUT);
-	if (lowVoltageMode) {
-		// MCLR is activated on the 
-		// falling-edge.
-		digitalWrite(MCLR, HIGH);
-		digitalWrite(MCLR, LOW);
-	} else {
-		// Turn on the high voltage
-		// on MCLR pin (see schematic).
-		// Should be connected to approx.
-		// one kilo-ohm pull-down resistor.
-		digitalWrite(MCLR, HIGH);
-	}
-	delayMicroseconds(1);
 
+	// Turn on the high voltage
+	// on MCLR pin (see schematic).
+	// Should be connected to approx.
+	// one kilo-ohm pull-down resistor.
+	digitalWrite(MCLR, HIGH);
+	// In the case of low-voltage
+	// MCLR is activated on the 
+	// falling-edge.
+	if (lowVoltageMode)
+		digitalWrite(MCLR, LOW);
+	
+	delayMicroseconds(1);
 	digitalWrite(PVCC, HIGH);
 	delay(1);
 
@@ -36,13 +35,10 @@ bool PIC12F1822_PicProgrammer::enterProgrammingMode()
 		// If we're in low voltage programming
 		// mode we have to send sequence key.
 		PicSerial::writeMode();
-		PicSerial::writeBits(KEY_SEQ, 32);
 
-		// Send last clock pulse to enter
-		// programming mode.
-		digitalWrite(ICSPCLK, HIGH);
-		delayMicroseconds(1);
-		digitalWrite(ICSPCLK,  LOW);
+		// Send 32-bit key-sequence + 1 extra
+		// clock pulse to enter programming mode.
+		PicSerial::writeBits(KEY_SEQ, 32 + 1);
 		delay(1);
 	}
 
