@@ -36,14 +36,14 @@ public class HexReadProcessor extends HexProcessor {
 				
 				if (programmedWord != hexWord)
 					throw new ProgrammingException("Program data: " + Integer.toHexString(programmedWord) + " at address " + 
-					                               Integer.toHexString(address + i) + " does not match hex: " + Integer.toHexString(hexWord));
+					                               Integer.toHexString(address + (i >>> 1)) + " does not match hex: " + Integer.toHexString(hexWord));
 			} else {
 				programmedWord &= 0xFF;
 				int hexWord = data[i] & 0xFF;
 
 				if (programmedWord != hexWord)
 					throw new ProgrammingException("Program data: " + Integer.toHexString(programmedWord) + " at address " + 
-					                               Integer.toHexString(address + (i >>> 1)) + " does not match hex: " + Integer.toHexString(hexWord));
+					                               Integer.toHexString(address + i) + " does not match hex: " + Integer.toHexString(hexWord));
 
 			}
 		}
