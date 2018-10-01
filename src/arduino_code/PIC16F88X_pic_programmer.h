@@ -10,6 +10,8 @@
  * URL: http://ww1.microchip.com/downloads/en/DeviceDoc/41287D.pdf
  */
 
+#pragma once
+
 #include "./PIC12F1822_pic_programmer.h"
 
 #define PIC16F88X_CONFIG_ADDR 0x2000
