@@ -26,12 +26,19 @@ public:
 		digitalWrite(ICSPDAT, LOW);
 	}
 
-	static void writeBits(unsigned long data, unsigned int n) {
+	static void writeBits(unsigned long data, unsigned int n) 
+	{
 		// Write bits in LSb first
 		while (n--) {
 			writeBit(data & 0x1);
 			data >>= 1;
 		}
+	}
+
+	static void writeBitsMSBF(unsigned long data, unsigned int n) 
+	{
+		while (n--)
+			writeBit((data >> n) & 0x1);
 	}
 
 	static void writeBit(bool data) 
@@ -70,6 +77,18 @@ public:
 		while (i < n)
 			data |= readBit() << i++;
 		
+		return data;
+	}
+
+	static unsigned int readBitsMSBF(unsigned int n) 
+	{
+		unsigned int data = 0;
+
+		while (n--) {
+			data <<= 1;
+			data |= readBit();
+		}
+
 		return data;
 	}
 
