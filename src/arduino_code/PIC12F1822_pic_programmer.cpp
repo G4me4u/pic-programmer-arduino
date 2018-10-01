@@ -212,7 +212,7 @@ int PIC12F1822_PicProgrammer::commandReadProgramMemory() const
 {
 	this->commandEntry(RD_PRO_CMD);
 
-	PicSerial:: readMode();
+	PicSerial::readMode();
 
 	PicSerial::readBit();
 	int data = PicSerial::readBits(14);
