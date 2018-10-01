@@ -5,6 +5,7 @@
 #include "./PIC12F1822_pic_programmer.h"
 #include "./PIC18F1XK22_pic_programmer.h"
 #include "./PIC16F88X_pic_programmer.h"
+#include "./PIC16F184XX_pic_programmer.h"
 
 PicProgrammer *programmer = nullptr;
 
@@ -89,6 +90,9 @@ bool doCommand(char command) {
       break;
     case PIC16F88X_SPECIFICATION:
       programmer = new PIC16F88X_PicProgrammer(mode);
+      break;
+    case PIC16F184XX_SPECIFICATION:
+      programmer = new PIC16F184XX_PicProgrammer(mode);
       break;
     default:
       return false;

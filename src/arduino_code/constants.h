@@ -20,6 +20,7 @@
 #define PIC12F1822_SPECIFICATION  0x00
 #define PIC18F1XK22_SPECIFICATION 0x01
 #define PIC16F88X_SPECIFICATION   0x02
+#define PIC16F184XX_SPECIFICATION 0x03
 
 // Flags sent by the Arduino to the
 // transmitter.

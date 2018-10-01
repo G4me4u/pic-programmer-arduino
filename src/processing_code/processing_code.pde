@@ -4,12 +4,13 @@ import java.io.Reader;
 import java.io.FileReader;
 
 /** File path location */
-private final String FILE_PATH = "C:/Users/Christian/MPLABXProjects/blink-pic18f13k22.X/dist/default/production/blink-pic18f13k22.X.production.hex";
+private final String FILE_PATH = "C:/Users/Christian/MPLABXProjects/blink-pic16f18246.X/dist/default/production/blink-pic16f18246.X.production.hex";
+//private final String FILE_PATH = "C:/Users/Christian/MPLABXProjects/blink-pic18f13k22.X/dist/default/production/blink-pic18f13k22.X.production.hex";
 //private final String FILE_PATH = "C:/Users/Christian/MPLABXProjects/blink-pic16f883.X/dist/default/production/blink-pic16f883.X.production.hex";
 //private final String FILE_PATH = "C:/Users/Christian/MPLABXProjects/blink-pic16f1705.X/dist/default/production/blink-pic16f1705.X.production.hex";
 //private final String FILE_PATH = "C:/Users/Christian/MPLABXProjects/blink.X/dist/default/production/blink.X.production.hex";
 /** Target device to program */
-private final int TARGET_DEVICE_ID = PIC18F13K22_DEV_ID;
+private final int TARGET_DEVICE_ID = PIC16F18426_DEV_ID;
 /** Programming mode specification */
 private final boolean FORCE_LOW_VOLTAGE_PROGRAMMING = true;
 
@@ -21,19 +22,22 @@ private static final int PIC12F1822_DEV_ID  = 0x0138;
 private static final int PIC16F1705_DEV_ID  = 0x0182;
 private static final int PIC18F13K22_DEV_ID = 0x027A;
 private static final int PIC16F883_DEV_ID   = 0x0101;
+private static final int PIC16F18426_DEV_ID = 0x30D2;
 
 private static final int[] SUPPORTED_DEVICE_IDS = {
   PIC12F1822_DEV_ID,
   PIC16F1705_DEV_ID,
   PIC18F13K22_DEV_ID,
-  PIC16F883_DEV_ID
+  PIC16F883_DEV_ID,
+  PIC16F18426_DEV_ID
 };
 
 private static final String[] SUPPORTED_DEVICE_NAMES = {
   "PIC12F1822",
   "PIC16F1705",
   "PIC18F13K22",
-  "PIC16F883"
+  "PIC16F883",
+  "PIC16F18426"
 };
 
 private static final int LOW_VOLTAGE_PROGRAMMING_MASK = 0x80;
@@ -41,6 +45,7 @@ private static final int LOW_VOLTAGE_PROGRAMMING_MASK = 0x80;
 private static final int PIC12F1822_SPECIFICATION  = 0x00;
 private static final int PIC18F1XK22_SPECIFICATION = 0x01;
 private static final int PIC16F88X_SPECIFICATION   = 0x02;
+private static final int PIC16F184XX_SPECIFICATION = 0x03;
 
 // The programming modes that will be 
 // used for programming. The 6 low bits 
@@ -53,7 +58,8 @@ private static final int[] PROGRAMMING_MODES = {
   PIC12F1822_SPECIFICATION,  // PIC12F1822
   PIC12F1822_SPECIFICATION,  // PIC16F1705
   PIC18F1XK22_SPECIFICATION, // PIC18F13K22
-  PIC16F88X_SPECIFICATION    // PIC16F883
+  PIC16F88X_SPECIFICATION,   // PIC16F883
+  PIC16F184XX_SPECIFICATION  // PIC16F18426
 };
 
 private static final char POWER_GOOD_SIG = 'g';
