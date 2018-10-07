@@ -82,6 +82,6 @@ private:
 
 	// --------------- LOAD ADDRESS COMMAND --------------- //
 
-	void commandLoadPCAddress(unsigned long addr);
+	void commandLoadPCAddress(unsigned int addr);
 
 };
