@@ -13,18 +13,14 @@ unsigned int writeBufferSize = 0;
 unsigned char writeBuffer[WRITE_BUFFER_SIZE];
 
 void setup() {
-  // Set MCLR to input
-  // when not programming.
+  // Set to input when 
+  // not programming.
   pinMode(MCLR,    INPUT);
 
-  // The rest are outputs
-  pinMode(PVCC,    OUTPUT);
-  pinMode(ICSPCLK, OUTPUT);
-  pinMode(PGM,     OUTPUT);
-
-  digitalWrite(PVCC,    LOW);
-  digitalWrite(ICSPCLK, LOW);
-  digitalWrite(PGM,     LOW);
+  pinMode(PVCC,    INPUT);
+  pinMode(ICSPCLK, INPUT);
+  pinMode(ICSPDAT, INPUT);
+  pinMode(PGM,     INPUT);
 
   Serial.begin(TRANSFER_BAUDRATE);
 
@@ -107,6 +103,21 @@ bool doCommand(char command) {
     Serial.write((char)(flags >> 8));
     Serial.write((char)(flags >> 0));
 
+    // Set programming pins as output.
+    // The MCLR pin has to be set by
+    // the individual programmers, as
+    // it is a critical pin to set as
+    // output.
+    pinMode(PVCC,    OUTPUT);
+    pinMode(ICSPCLK, OUTPUT);
+    pinMode(ICSPDAT, OUTPUT);
+    pinMode(PGM,     OUTPUT);
+
+    digitalWrite(PVCC,    LOW);
+    digitalWrite(ICSPCLK, LOW);
+    digitalWrite(ICSPDAT, LOW);
+    digitalWrite(PGM,     LOW);
+
     return programmer->enterProgrammingMode();
   }
   
@@ -117,7 +128,15 @@ bool doCommand(char command) {
   switch(command) {
   case 's':
     programmer->leaveProgrammingMode();
-    
+
+    // Set programming pins as input.
+    pinMode(MCLR,    INPUT);
+
+    pinMode(PVCC,    INPUT);
+    pinMode(ICSPCLK, INPUT);
+    pinMode(ICSPDAT, INPUT);
+    pinMode(PGM,     INPUT);
+
     // Delete the programmer
     delete programmer;
     programmer = nullptr;
